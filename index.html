@@ -14,6 +14,8 @@
   label{display:block;color:var(--muted);font-size:12px;margin:10px 0 6px} select,input,button{font:inherit;border-radius:10px;border:1px solid #444;background:#222;color:var(--text);padding:10px 12px} input{width:100%}
   button{cursor:pointer;background:#242424} button.primary{background:var(--accent);color:#06220f;border:none;font-weight:700} button.danger{background:#3a1d1d;color:#fff;border-color:#6b2b2b}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.row button{flex:0 0 auto}
+  .topControls{align-items:end}.topControls .modeBox{flex:2 1 260px}.topControls .bpmBox{flex:0 1 130px}.topControls button{min-width:82px}
+  @media(max-width:560px){.wrap{padding:10px 10px 20px}h1{font-size:18px;line-height:1.25}.card{padding:10px}.topControls{display:grid;grid-template-columns:1fr 1fr;gap:8px}.topControls .modeBox{grid-column:1/-1}.topControls .bpmBox{grid-column:1/2}.topControls button{width:100%;min-width:0}.topControls select,.topControls input{width:100%;min-width:0}.beats{gap:5px}.beat{font-size:18px}.big{font-size:40px}.meters{grid-template-columns:repeat(2,1fr)}}
   .big{font-size:48px;font-weight:800;letter-spacing:.05em;text-align:center;margin:8px 0}.mode{font-size:15px;color:var(--muted);text-align:center}.status{font-size:18px;text-align:center;min-height:28px;color:var(--warn);font-weight:700}
   .beats{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin:14px 0}.beat{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#2a2a2a;border:1px solid #444;color:#aaa;font-weight:800;font-size:22px}.beat.on{background:var(--accent);color:#061b0c;transform:scale(1.06)}.beat.main{box-shadow:0 0 0 3px rgba(255,255,255,.08) inset}.beat.snare{border-color:#777}.beat.hot{background:var(--hot);color:#fff}
   .meters{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}.meter{background:#141414;border:1px solid #333;border-radius:10px;padding:10px}.meter b{display:block;font-size:22px}.meter span{color:var(--muted);font-size:12px}
@@ -23,12 +25,10 @@
 <body>
 <div class="wrap">
   <h1>愛をこめて花束を BPM81〜85安定トレーナー</h1>
-  <div class="sub">目的：BPM81〜85で8分を均等に保ち、1刻みの差を「1拍」ではなく「数小節の累積」で感じる練習。口カウントは <b>1 2 3 4 5 6 7 8</b> を基本にしています。</div>
-
   <div class="grid">
     <section class="card wide">
-      <div class="row">
-        <div>
+      <div class="row topControls">
+        <div class="modeBox">
           <label>練習モード</label>
           <select id="mode">
             <option value="steady">81固定：安定練習</option>
@@ -37,7 +37,7 @@
             <option value="compare">81→82→83→84→85→81：差を体感</option>
           </select>
         </div>
-        <div>
+        <div class="bpmBox">
           <label>BPM</label>
           <input id="bpm" type="number" min="40" max="220" step="1" value="81">
         </div>
@@ -79,7 +79,7 @@
 
     <section class="card" id="abPanel">
       <h2 style="font-size:18px;margin:0 0 8px">81〜85当て</h2>
-      <p class="hint">再生中、ランダムに81〜85のどれかで鳴ります。まず8小節以上聴いてから判定してください。</p>
+      <p class="hint">再生中、4小節ごとに81〜85のどれかへ自動で切り替わります。切り替わった後の4小節内で判定してください。</p>
       <div class="row answerBtns">
         <button id="ans81">81</button>
         <button id="ans82">82</button>
@@ -128,12 +128,19 @@
   function click(freq=880, dur=0.045, vol=0.5){ const ac=ctx(); const o=ac.createOscillator(); const g=ac.createGain(); o.frequency.value=freq; o.type='square'; g.gain.setValueAtTime(0.0001, ac.currentTime); g.gain.exponentialRampToValueAtTime(Math.max(0.001,vol), ac.currentTime+0.003); g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+dur); o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+dur+0.01); }
   function setVisual(pos, hot=false){ beatNodes.forEach((n,i)=>{n.classList.toggle('on', i===pos-1); n.classList.toggle('hot', hot&&i===pos-1);}); $('count').textContent=pos; $('beatNo').textContent=pos; $('barNo').textContent=Math.floor(step/8)+1; }
   function shouldSound(pos, phaseOn){ const sm=$('soundMode').value; if(!phaseOn) return false; if(sm==='all') return true; if(sm==='main') return [1,3,5,7].includes(pos); return pos===1; }
+  function pickSecretBpm(){
+    const next = 81 + Math.floor(Math.random()*5);
+    secretBpm = (next===secretBpm) ? 81 + ((next-80)%5) : next;
+    $('abResult').textContent='判定してください';
+  }
   function tick(){
-    const mode=$('mode').value; const gapBars=parseInt($('gapBars').value,10); const pos=(step%8)+1; let phaseOn=true; currentBpm=parseFloat($('bpm').value)||81;
+    const mode=$('mode').value; const gapBars=parseInt($('gapBars').value,10);
+    if(mode==='ab' && step>0 && step%(8*4)===0){ pickSecretBpm(); log(`ランダム切替：新しい4小節が開始`); }
+    const pos=(step%8)+1; let phaseOn=true; currentBpm=parseFloat($('bpm').value)||81;
     if(mode==='ab') currentBpm=secretBpm;
     if(mode==='gap'){ const block=Math.floor(step/(8*gapBars)); phaseOn=(block%2===0); $('phase').textContent=phaseOn?'ON':'OFF'; $('status').textContent=phaseOn?'クリックあり':'クリック消失：自分の内部時計で維持'; }
     else if(mode==='compare'){ const barsPer=4; compareIndex=Math.floor(step/(8*barsPer))%compareSeq.length; currentBpm=compareSeq[compareIndex]; $('phase').textContent=(compareIndex+1)+' / '+compareSeq.length; $('status').textContent=currentBpm===81?'基準81':`BPM${currentBpm}を体感`; }
-    else { $('phase').textContent='ON'; $('status').textContent=mode==='ab'?'81〜85のどれかを判定':'安定練習'; }
+    else { $('phase').textContent='ON'; $('status').textContent=mode==='ab'?'4小節ごとにランダム切替':'安定練習'; }
     $('nowBpm').textContent=currentBpm;
     lastTickTime=performance.now(); lastPos=pos; setVisual(pos, !phaseOn);
     if(shouldSound(pos, phaseOn)){ const accent = pos===1 ? 1320 : (pos===3||pos===7 ? 990 : 660); click(accent, pos===1?0.06:0.035, parseFloat($('volume').value)); }
@@ -142,7 +149,7 @@
     lastIntervalMs=intervalMs;
     timer=setTimeout(tick, intervalMs);
   }
-  function start(){ stop(false); running=true; step=0; if($('mode').value==='ab'){ secretBpm = 81 + Math.floor(Math.random()*5); $('abResult').textContent='判定してください'; } $('modeText').textContent=$('mode').selectedOptions[0].textContent; ctx().resume(); tick(); }
+  function start(){ stop(false); running=true; step=0; if($('mode').value==='ab'){ pickSecretBpm(); } $('modeText').textContent=$('mode').selectedOptions[0].textContent; ctx().resume(); tick(); }
   function stop(reset=true){ running=false; if(timer) clearTimeout(timer); timer=null; if(reset){ $('status').textContent='停止中'; $('phase').textContent='-'; $('count').textContent='-'; beatNodes.forEach(n=>n.classList.remove('on','hot')); } }
   function log(s){ const el=$('log'); if(el.textContent.startsWith('ここに')) el.textContent=''; const time=new Date().toLocaleTimeString(); el.innerHTML=`[${time}] ${s}<br>`+el.innerHTML; }
   $('start').onclick=start; $('stop').onclick=()=>stop(true);
@@ -173,5 +180,5 @@
 
 
 <!-- Updated version:
-BPM training range expanded to 81,82,83,84,85. Added rush/OK self judgement and tap drift measurement.
+UI simplified, mobile top controls adjusted, and random BPM now switches automatically every 4 bars.
 -->
