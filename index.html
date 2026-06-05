@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>BPM81安定トレーナー</title>
+<title>BPM81〜85安定トレーナー</title>
 <style>
   :root{--bg:#111;--panel:#1b1b1b;--text:#f2f2f2;--muted:#aaa;--accent:#37d67a;--warn:#ffcf33;--hot:#ff4d4d;--line:#333;}
   *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;}
@@ -22,8 +22,8 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>愛をこめて花束を BPM81安定トレーナー</h1>
-  <div class="sub">目的：BPM81で8分を均等に保ち、BPM82との差を「1拍」ではなく「数小節の累積」で感じる練習。口カウントは <b>1 2 3 4 5 6 7 8</b> を基本にしています。</div>
+  <h1>愛をこめて花束を BPM81〜85安定トレーナー</h1>
+  <div class="sub">目的：BPM81〜85で8分を均等に保ち、1刻みの差を「1拍」ではなく「数小節の累積」で感じる練習。口カウントは <b>1 2 3 4 5 6 7 8</b> を基本にしています。</div>
 
   <div class="grid">
     <section class="card wide">
@@ -33,8 +33,8 @@
           <select id="mode">
             <option value="steady">81固定：安定練習</option>
             <option value="gap">クリック消失：4小節ON / 4小節OFF</option>
-            <option value="ab">81/82当て：ランダム再生</option>
-            <option value="compare">81→82→81：差を体感</option>
+            <option value="ab">81〜85当て：ランダム再生</option>
+            <option value="compare">81→82→83→84→85→81：差を体感</option>
           </select>
         </div>
         <div>
@@ -78,11 +78,14 @@
     </section>
 
     <section class="card" id="abPanel">
-      <h2 style="font-size:18px;margin:0 0 8px">81/82当て</h2>
-      <p class="hint">再生中、ランダムに81または82で鳴ります。まず8小節以上聴いてから判定してください。</p>
+      <h2 style="font-size:18px;margin:0 0 8px">81〜85当て</h2>
+      <p class="hint">再生中、ランダムに81〜85のどれかで鳴ります。まず8小節以上聴いてから判定してください。</p>
       <div class="row answerBtns">
-        <button id="ans81">81だと思う</button>
-        <button id="ans82">82だと思う</button>
+        <button id="ans81">81</button>
+        <button id="ans82">82</button>
+        <button id="ans83">83</button>
+        <button id="ans84">84</button>
+        <button id="ans85">85</button>
         <button id="reveal">答え</button>
       </div>
       <div class="status" id="abResult"></div>
@@ -91,7 +94,21 @@
     <section class="card">
       <h2 style="font-size:18px;margin:0 0 8px">使い方</h2>
       <p class="hint"><span class="pill">1・5</span>を4分の重心、<span class="pill">3・7</span>をスネア位置として感じます。数字は8分のマスです。3と裏が走る場合は、<b>6を急がず、7に吸われない</b>ことを意識してください。</p>
-      <p class="hint">おすすめ順：①81固定 → ②クリック消失 → ③81/82当て → ④81→82→81比較。</p>
+      <p class="hint">おすすめ順：①81固定 → ②クリック消失 → ③81〜85当て → ④81→82→83→84→85比較。</p>
+    </section>
+
+
+
+    <section class="card wide">
+      <h2 style="font-size:18px;margin:0 0 8px">3と裏チェック / タップ測定</h2>
+      <p class="hint">「3と裏」は8分カウントの <b>6</b> です。走ったと感じたら即押し、良かった時も押してログに残します。さらに「6をタップ」で、クリックの6番に対して何ms早い/遅いかを表示します。</p>
+      <div class="row answerBtns">
+        <button id="rush6" class="danger">3と裏が走った</button>
+        <button id="ok6">3と裏OK</button>
+        <button id="tap6" class="primary">6をタップ測定</button>
+        <button id="clearLog">ログ消去</button>
+      </div>
+      <div class="status" id="tapResult"></div>
     </section>
 
     <section class="card wide">
@@ -106,7 +123,7 @@
   for(let i=1;i<=8;i++){ const d=document.createElement('div'); d.className='beat'+((i===1||i===5)?' main':'')+((i===3||i===7)?' snare':''); d.textContent=i; beatsEl.appendChild(d); }
   const beatNodes=[...document.querySelectorAll('.beat')];
   const $=id=>document.getElementById(id);
-  let audio=null, timer=null, step=0, running=false, currentBpm=81, secretBpm=81, compareSeq=[81,82,81], compareIndex=0, lastTickTime=0;
+  let audio=null, timer=null, step=0, running=false, currentBpm=81, secretBpm=81, compareSeq=[81,82,83,84,85,81], compareIndex=0, lastTickTime=0, lastIntervalMs=60000/81/2, lastPos=1;
   function ctx(){ if(!audio) audio=new (window.AudioContext||window.webkitAudioContext)(); return audio; }
   function click(freq=880, dur=0.045, vol=0.5){ const ac=ctx(); const o=ac.createOscillator(); const g=ac.createGain(); o.frequency.value=freq; o.type='square'; g.gain.setValueAtTime(0.0001, ac.currentTime); g.gain.exponentialRampToValueAtTime(Math.max(0.001,vol), ac.currentTime+0.003); g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+dur); o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+dur+0.01); }
   function setVisual(pos, hot=false){ beatNodes.forEach((n,i)=>{n.classList.toggle('on', i===pos-1); n.classList.toggle('hot', hot&&i===pos-1);}); $('count').textContent=pos; $('beatNo').textContent=pos; $('barNo').textContent=Math.floor(step/8)+1; }
@@ -115,22 +132,40 @@
     const mode=$('mode').value; const gapBars=parseInt($('gapBars').value,10); const pos=(step%8)+1; let phaseOn=true; currentBpm=parseFloat($('bpm').value)||81;
     if(mode==='ab') currentBpm=secretBpm;
     if(mode==='gap'){ const block=Math.floor(step/(8*gapBars)); phaseOn=(block%2===0); $('phase').textContent=phaseOn?'ON':'OFF'; $('status').textContent=phaseOn?'クリックあり':'クリック消失：自分の内部時計で維持'; }
-    else if(mode==='compare'){ const barsPer=4; compareIndex=Math.floor(step/(8*barsPer))%compareSeq.length; currentBpm=compareSeq[compareIndex]; $('phase').textContent=(compareIndex+1)+' / 3'; $('status').textContent=currentBpm===82?'少し速い82を体感':'基準81'; }
-    else { $('phase').textContent='ON'; $('status').textContent=mode==='ab'?'81か82か判定':'81固定で安定'; }
+    else if(mode==='compare'){ const barsPer=4; compareIndex=Math.floor(step/(8*barsPer))%compareSeq.length; currentBpm=compareSeq[compareIndex]; $('phase').textContent=(compareIndex+1)+' / '+compareSeq.length; $('status').textContent=currentBpm===81?'基準81':`BPM${currentBpm}を体感`; }
+    else { $('phase').textContent='ON'; $('status').textContent=mode==='ab'?'81〜85のどれかを判定':'安定練習'; }
     $('nowBpm').textContent=currentBpm;
-    setVisual(pos, !phaseOn);
+    lastTickTime=performance.now(); lastPos=pos; setVisual(pos, !phaseOn);
     if(shouldSound(pos, phaseOn)){ const accent = pos===1 ? 1320 : (pos===3||pos===7 ? 990 : 660); click(accent, pos===1?0.06:0.035, parseFloat($('volume').value)); }
     step++;
     const intervalMs=60000/currentBpm/2;
+    lastIntervalMs=intervalMs;
     timer=setTimeout(tick, intervalMs);
   }
-  function start(){ stop(false); running=true; step=0; if($('mode').value==='ab'){ secretBpm = Math.random()<0.5?81:82; $('abResult').textContent='判定してください'; } $('modeText').textContent=$('mode').selectedOptions[0].textContent; ctx().resume(); tick(); }
+  function start(){ stop(false); running=true; step=0; if($('mode').value==='ab'){ secretBpm = 81 + Math.floor(Math.random()*5); $('abResult').textContent='判定してください'; } $('modeText').textContent=$('mode').selectedOptions[0].textContent; ctx().resume(); tick(); }
   function stop(reset=true){ running=false; if(timer) clearTimeout(timer); timer=null; if(reset){ $('status').textContent='停止中'; $('phase').textContent='-'; $('count').textContent='-'; beatNodes.forEach(n=>n.classList.remove('on','hot')); } }
   function log(s){ const el=$('log'); if(el.textContent.startsWith('ここに')) el.textContent=''; const time=new Date().toLocaleTimeString(); el.innerHTML=`[${time}] ${s}<br>`+el.innerHTML; }
   $('start').onclick=start; $('stop').onclick=()=>stop(true);
   $('mode').onchange=()=>{ $('modeText').textContent=$('mode').selectedOptions[0].textContent; $('abResult').textContent=''; };
-  $('ans81').onclick=()=>judge(81); $('ans82').onclick=()=>judge(82); $('reveal').onclick=()=>{$('abResult').textContent=`答え：${secretBpm}`; log(`81/82当て：答えは ${secretBpm}`)};
-  function judge(ans){ const ok=ans===secretBpm; $('abResult').textContent= ok?`正解：${secretBpm}`:`不正解：答えは${secretBpm}`; log(`81/82当て：${ans}と回答 → ${ok?'正解':'不正解'}（答え${secretBpm}）`); }
+  $('ans81').onclick=()=>judge(81); $('ans82').onclick=()=>judge(82); $('ans83').onclick=()=>judge(83); $('ans84').onclick=()=>judge(84); $('ans85').onclick=()=>judge(85); $('reveal').onclick=()=>{$('abResult').textContent=`答え：${secretBpm}`; log(`81〜85当て：答えは ${secretBpm}`)};
+  function judge(ans){ const ok=ans===secretBpm; $('abResult').textContent= ok?`正解：${secretBpm}`:`不正解：答えは${secretBpm}`; log(`81〜85当て：${ans}と回答 → ${ok?'正解':'不正解'}（答え${secretBpm}）`); }
+  function currentBar(){ return Math.floor(Math.max(0, step-1)/8)+1; }
+  function markRush(kind){ const pos=lastPos; const msg = kind==='rush' ? `3と裏が走った：BPM${currentBpm} / 小節${currentBar()} / 直近位置${pos}` : `3と裏OK：BPM${currentBpm} / 小節${currentBar()} / 直近位置${pos}`; $('tapResult').textContent = kind==='rush' ? '走りを記録しました' : 'OKを記録しました'; log(msg); }
+  function tapMeasure(){
+    if(!running){ $('tapResult').textContent='再生中にタップしてください'; return; }
+    const now=performance.now();
+    const elapsed=now-lastTickTime;
+    const nearest=Math.round(elapsed/lastIntervalMs);
+    const dev=elapsed-nearest*lastIntervalMs;
+    const nearestPos=((lastPos-1+nearest)%8)+1;
+    const ms=Math.round(dev);
+    const sign=ms<0?'早い':'遅い';
+    const abs=Math.abs(ms);
+    const targetNote = nearestPos===6 ? '6に対して' : `近い位置${nearestPos}に対して`;
+    $('tapResult').textContent = `${targetNote} ${abs}ms ${sign}`;
+    log(`タップ測定：${targetNote} ${abs}ms ${sign} / BPM${currentBpm}`);
+  }
+  $('rush6').onclick=()=>markRush('rush'); $('ok6').onclick=()=>markRush('ok'); $('tap6').onclick=tapMeasure; $('clearLog').onclick=()=>{$('log').textContent='ここに判定結果が残ります。'; $('tapResult').textContent='';};
 })();
 </script>
 </body>
@@ -138,5 +173,5 @@
 
 
 <!-- Updated version:
-BPM training range expanded to 81,82,83,84,85.
+BPM training range expanded to 81,82,83,84,85. Added rush/OK self judgement and tap drift measurement.
 -->
