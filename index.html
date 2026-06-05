@@ -32,7 +32,11 @@
           <label>練習モード</label>
           <select id="mode">
             <option value="steady">81固定：安定練習</option>
-            <option value="gap">クリック消失：4小節ON / 4小節OFF</option>
+            <option value="gap1">クリック消失：4小節ON / 1小節OFF</option>
+            <option value="gap2">クリック消失：4小節ON / 2小節OFF</option>
+            <option value="gap4">クリック消失：4小節ON / 4小節OFF</option>
+            <option value="gap8">クリック消失：4小節ON / 8小節OFF</option>
+            <option value="gap16">クリック消失：4小節ON / 16小節OFF</option>
             <option value="ab">81〜85当て：ランダム再生</option>
             <option value="compare">81→82→83→84→85→81：差を体感</option>
           </select>
@@ -52,10 +56,6 @@
             <option value="main">4分だけ（1,3,5,7）</option>
             <option value="sparse">1拍目だけ</option>
           </select>
-        </div>
-        <div>
-          <label>ON/OFF小節数（消失モード）</label>
-          <select id="gapBars"><option>2</option><option selected>4</option><option>8</option></select>
         </div>
         <div>
           <label>音量</label>
@@ -94,7 +94,7 @@
     <section class="card">
       <h2 style="font-size:18px;margin:0 0 8px">使い方</h2>
       <p class="hint"><span class="pill">1・5</span>を4分の重心、<span class="pill">3・7</span>をスネア位置として感じます。数字は8分のマスです。3と裏が走る場合は、<b>6を急がず、7に吸われない</b>ことを意識してください。</p>
-      <p class="hint">おすすめ順：①81固定 → ②クリック消失 → ③81〜85当て → ④81→82→83→84→85比較。</p>
+      <p class="hint">おすすめ順：①81固定 → ②クリック消失（4ON/1OFFから段階的に） → ③81〜85当て → ④81→82→83→84→85比較。</p>
     </section>
 
 
@@ -134,11 +134,18 @@
     $('abResult').textContent='判定してください';
   }
   function tick(){
-    const mode=$('mode').value; const gapBars=parseInt($('gapBars').value,10);
+    const mode=$('mode').value;
     if(mode==='ab' && step>0 && step%(8*4)===0){ pickSecretBpm(); log(`ランダム切替：新しい4小節が開始`); }
     const pos=(step%8)+1; let phaseOn=true; currentBpm=parseFloat($('bpm').value)||81;
     if(mode==='ab') currentBpm=secretBpm;
-    if(mode==='gap'){ const block=Math.floor(step/(8*gapBars)); phaseOn=(block%2===0); $('phase').textContent=phaseOn?'ON':'OFF'; $('status').textContent=phaseOn?'クリックあり':'クリック消失：自分の内部時計で維持'; }
+    if(mode.startsWith('gap')){
+      const offBars=parseInt(mode.replace('gap',''),10);
+      const cycleBars=4+offBars;
+      const barInCycle=Math.floor(step/8)%cycleBars;
+      phaseOn=barInCycle<4;
+      $('phase').textContent=phaseOn?'ON':'OFF';
+      $('status').textContent=phaseOn?'クリックあり':'クリック消失：自分の内部時計で維持';
+    }
     else if(mode==='compare'){ const barsPer=4; compareIndex=Math.floor(step/(8*barsPer))%compareSeq.length; currentBpm=compareSeq[compareIndex]; $('phase').textContent=(compareIndex+1)+' / '+compareSeq.length; $('status').textContent=currentBpm===81?'基準81':`BPM${currentBpm}を体感`; }
     else { $('phase').textContent='ON'; $('status').textContent=mode==='ab'?'4小節ごとにランダム切替':'安定練習'; }
     $('nowBpm').textContent=currentBpm;
@@ -179,6 +186,6 @@
 </html>
 
 
-<!-- Updated version:
-UI simplified, mobile top controls adjusted, and random BPM now switches automatically every 4 bars.
+<!-- Updated version v5:
+Added click gap modes to the existing training-mode dropdown: 4ON/1OFF, 4ON/2OFF, 4ON/4OFF, 4ON/8OFF, 4ON/16OFF. Random mode behavior unchanged.
 -->
